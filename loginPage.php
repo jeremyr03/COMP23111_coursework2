@@ -14,6 +14,9 @@
     <a onclick="document.getElementById('signup').style.display='block'">Sign Up</a>
 </section>
     <?php
+    session_start();
+//    $_SESSION['example'] = 1;
+//    print_r($_SESSION);
 //    Log in
     if (empty($_POST))
     {
@@ -22,22 +25,25 @@
     }
     else
     {
-        showPOSTdata();
+//        showPOSTdata();
         $user = getUserCredentials();
         if (isset($user['badinput']))
         {
-            echo ("<br>something went wrong:<br>" . $user['badinput']);
+            echo ("<div class='popup-content' style='display: block'>something went wrong:" . $user['badinput'] . "</div>");
             echo showLoginPopup();
             echo showSignUpPopup();
         }
-        elseif (isset($user['validinput']))
+        if (isset($user['validinput']))
         {
-            echo ("<br>Logged in:<br>" . $user['validinput']);
+            echo ("<div class='popup-content' style='display: block'>Logged in:" . $user['validinput']. "</div>");
+            $_SESSION['username'] = $user['username'];
             header("refresh:5; url=mainPage.php");
         }
         else
         {
-            echo ("<br>hmmmm");
+            echo ("<div class='popup-content' style='display: block'>hmmmm. An error that shouldn't be possible has occurred. Well done!</div>");
+            echo showLoginPopup();
+            echo showSignUpPopup();
         }
     }
     ?>
@@ -51,36 +57,54 @@
 include 'configure.php';
 $configure = new Config();
 
-function accessDatabase()
+function getUserCredentials()
 {
-    global $configure;
-    try {
-        $pdo = new pdo("mysql:host=dbhost.cs.man.ac.uk;dbname=t11915jr","t11915jr", "Dd-17.o.TTaS");
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+    $user = array();
+    if (isset($_POST['password'])) {
+        $user['username'] = $_POST['username'];
+        $user['password'] = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        $user = loginUser($user);
     }
-    catch (PDOException $e)
-    {
-        echo "Connection failed" . $e->getMessage();
-        $pdo = null;
+    else{
+        if ($_POST['password1'] != $_POST['password2'])
+        {
+            $user = array();
+            $user['badinput'] = "Passwords do not match";
+            return $user;
+        }
+
+        $user['username'] = $_POST['username'];
+        $user['name'] = $_POST['name'];
+        $user['password'] = password_hash($_POST['password1'], PASSWORD_DEFAULT);
+        if (strlen($user['password'])< 6)
+        {
+            $user = array();
+            $user['badinput'] = "Password too short";
+            return $user;
+        }
+        $user = registerUser($user);
     }
-    return $pdo;
+    return $user;
+
 }
 
 function registerUser($user)
 {
     $pdo = accessDatabase();
     $userID = $user['username'];
-    $sql = $sql = "SELECT * FROM User WHERE user_ID='$userID'";
-    $query = getFromDatabase($user,$sql);
-    if (mysqli_num_rows($query) > 0) {
+    $userName = $user['name'];
+    $userPass = $user['password'];
+    $sql = "SELECT * FROM User WHERE user_ID=:userID";
+    $sql_arr = ['userID'=>$userID];
+    $query = accessSchema($sql, $sql_arr);
+    if ($query->rowCount() > 0) {
+        $user = array();
         $user['badinput'] = "User exists already";
         return $user;
     }
-    $sql = "INSERT INTO User (user_ID, user_name, user_password) VALUES (:userId, :username, :userpassword);";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute(['userId' => $user['username'],
-        'username' => $user['name'],
-        'userpassword' => $user['password']]);
+    $sql = "INSERT INTO `t11915jr`.User (user_ID, user_name, user_password) VALUES (:userId, :username, :userpassword);";
+    $sql_arr = ['userId'=>&$userID, 'username'=>&$userName, 'userpassword'=>&$userPass];
+    $query = accessSchema($sql, $sql_arr);
     $user['validinput'] = "User Created";
     return $user;
 }
@@ -88,40 +112,29 @@ function registerUser($user)
 function loginUser($user)
 {
     $userID = $user['username'];
-    $pass = $user['password'];
-    $sql = "SELECT * FROM User WHERE user_ID='$userID'";
-    $query = getFromDatabase($user, $sql);
-    if (mysqli_num_rows($query) == 0)
-    {
+    $userPass = $user['password'];
+    $sql = "SELECT user_password FROM User WHERE user_ID=:userID";
+    $sql_arr = ['userID'=>$userID];
+    $query = accessSchema($sql, $sql_arr);
+    if ($query->rowCount() == 0) {
+        $user = array();
         $user['badinput'] = "User does not exist";
         return $user;
     }
-    elseif (mysqli_num_rows($query) > 1) {
-        $user['badinput'] = "An error has occurred";
+    elseif ($query->rowCount() > 1) {
+        $user = array();
+        $user['badinput'] = "Error when accessing database; Multiple accounts found!";
         return $user;
     }
-//    $result = $query->use_result();
-    $result = 0;
-    if ($result != $pass)
+    elseif ($query->fetch() == $userPass)
     {
-        $user['badinput'] = "Incorrect Password entered";
+        $user = array();
+        $user['badinput'] = "Incorrect Password entered!";
+        return $user;
+    }else{
+        $user['validinput'] = "Credentials accepted";
         return $user;
     }
-
-    $sql = "SELECT user_ID, user_password FROM User WHERE  user_ID = :userId";
-    $pdo = accessDatabase();
-    if (empty($pdo))
-    {
-        $user['badinput'] = 'Cannot connect to database';
-        return $user;
-    }
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute(['userId'=>$user['username']]);
-
-    $pass = $user['password'];
-    $user['validinput'] = "User Created";
-    return $user;
 }
 
 function showLoginPopup()
@@ -174,38 +187,21 @@ function showSignUpPopup()
     ';
 }
 
-function getUserCredentials()
+function accessSchema($sql, $sqlstmt=[])
 {
-    $user = array();
-    if (isset($_POST['password'])) {
-        $user['username'] = $_POST['username'];
-        $user['password'] = $_POST['password'];
+    $sql_stmt = $sqlstmt;
+    try {
+        $pdo = new pdo('mysql:host=dbhost.cs.man.ac.uk;dbname=t11915jr', 't11915jr', 'Dd-17.o.TTaS');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($sql_stmt);
+        return $stmt;
     }
-    else{
-        if ($_POST['password1'] != $_POST['password2'])
-        {
-            $user['badinput'] = "Passwords do not match";
-            return $user;
-        }
-
-        $user['username'] = $_POST['username'];
-        $user['name'] = $_POST['name'];
-        $user['password'] = $_POST['password1'];
-        if (strlen($user['password'])< 6)
-        {
-            $user['badinput'] = "Password too short";
-            return $user;
-        }
-        $user = registerUser($user);
+    catch (PDOException $e)
+    {
+        echo "conncection failed" . $e->getMessage();
+        return null;
     }
-    return $user;
-
-}
-
-function getFromDatabase($user, $sql)
-{
-    $db = mysqli_connect('dbhost.cs.man.ac.uk', 't11915jr', 'Dd-17.o.TTaS', 't11915jr');
-    return mysqli_query($db, $sql);
 }
 
 function showPOSTdata()
@@ -214,5 +210,20 @@ function showPOSTdata()
     {
         echo ("<br>$key:$value");
     }
+}
+
+function accessDatabase()
+{
+    global $configure;
+    try {
+        $pdo = new pdo("mysql:host=dbhost.cs.man.ac.uk;dbname=t11915jr","t11915jr", "Dd-17.o.TTaS");
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
+    }
+    catch (PDOException $e)
+    {
+        echo "Connection failed" . $e->getMessage();
+        $pdo = null;
+    }
+    return $pdo;
 }
 ?>
