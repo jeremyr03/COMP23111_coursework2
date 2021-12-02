@@ -31,14 +31,30 @@ button {
 .column_container {
     display: flex;
     flex-wrap: wrap; }
-.column_container img {
-    margin-left: auto;
-    margin-right: auto; }
 
 .flex_column {
     border-radius: 25px;
-    flex: 50%;
+    flex: 5%;
     padding: 20px; }
+
+.quiz {
+    height: 250px;
+    background-color: #6f3473;
+    border-radius: 25px;
+    padding: 20px 25px;
+    color: #ffffff;
+    transition: height 0.5s;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+.quiz:hover{
+    background-color: #7179b5;
+    height: 270px;
+
+}
+.title{
+    font-size: 50px;
+}
 
 .navbar {
     background-color: #c4bdfc;

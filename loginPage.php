@@ -29,19 +29,19 @@
         $user = getUserCredentials();
         if (isset($user['badinput']))
         {
-            echo ("<div class='popup-content' style='display: block'>something went wrong:" . $user['badinput'] . "</div>");
+            echo ("<div class='popup-content' style='display: block; margin: unset'>something went wrong:" . $user['badinput'] . "</div>");
             echo showLoginPopup();
             echo showSignUpPopup();
         }
-        if (isset($user['validinput']))
+        elseif (isset($user['validinput']))
         {
-            echo ("<div class='popup-content' style='display: block'>Logged in:" . $user['validinput']. "</div>");
+            echo ("<div class='popup-content' style='display: block; margin: unset'>Logged in:" . $user['validinput']. "</div>");
             $_SESSION['username'] = $user['username'];
-            header("refresh:5; url=mainPage.php");
+            header("refresh:1; url=mainPage.php");
         }
         else
         {
-            echo ("<div class='popup-content' style='display: block'>hmmmm. An error that shouldn't be possible has occurred. Well done!</div>");
+            echo ("<div class='popup-content' style='display: block; margin: unset'>hmmmm. An error that shouldn't be possible has occurred. Well done!</div>");
             echo showLoginPopup();
             echo showSignUpPopup();
         }

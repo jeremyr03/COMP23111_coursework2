@@ -1,17 +1,20 @@
 CREATE DATABASE IF NOT EXISTS t11915jr;
 
-CREATE TABLE IF NOT EXISTS `t11915jr`.`Quiz`(
-    `quiz_ID` VARCHAR(45) NOT NULL,
-    `quiz_name` VARCHAR(255),
-    PRIMARY KEY (quiz_ID)
-);
-
 CREATE TABLE IF NOT EXISTS  `t11915jr`.`User`(
     `user_ID` VARCHAR(45) NOT NULL,
     `user_name` VARCHAR(255) NOT NULL,
     `user_password` VARCHAR(255) NOT NULL,
     PRIMARY KEY (user_ID)
 );
+
+CREATE TABLE IF NOT EXISTS `t11915jr`.`Quiz`(
+    `quiz_ID` VARCHAR(45) NOT NULL,
+    `quiz_name` VARCHAR(255),
+    `quiz_owner` VARCHAR(255),
+    PRIMARY KEY (quiz_ID),
+    FOREIGN KEY (quiz_owner) REFERENCES User(user_ID)
+);
+
 CREATE TABLE IF NOT EXISTS `t11915jr`.`Attempt` (
     `attempt_number` INT UNSIGNED NOT NULL,
     `user_ID` VARCHAR(45) NOT NULL,
