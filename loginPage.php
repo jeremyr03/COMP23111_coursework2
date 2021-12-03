@@ -191,7 +191,7 @@ function accessSchema($sql, $sqlstmt=[])
 {
     $sql_stmt = $sqlstmt;
     try {
-        $pdo = new pdo('mysql:host=dbhost.cs.man.ac.uk;dbname=t11915jr', 't11915jr', 'Dd-17.o.TTaS');
+        $pdo = new pdo('mysql:host=dbhost.cs.man.ac.uk;dbname=t11915jr', 't11915jr', 'root');
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
         $stmt = $pdo->prepare($sql);
         $stmt->execute($sql_stmt);
@@ -216,7 +216,7 @@ function accessDatabase()
 {
     global $configure;
     try {
-        $pdo = new pdo("mysql:host=dbhost.cs.man.ac.uk;dbname=t11915jr","t11915jr", "Dd-17.o.TTaS");
+        $pdo = new pdo("mysql:host=dbhost.cs.man.ac.uk;dbname=t11915jr","t11915jr", "root");
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_WARNING);
     }
     catch (PDOException $e)

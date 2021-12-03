@@ -11,22 +11,63 @@
 <!--Navigation bar-->
 <section class="navbar">
     <a onclick="document.getElementById('create').style.display='block'">Create Quiz</a>
-    <a onclick="document.getElementById('view').style.display='block'">View quiz</a>
+    <a onclick="document.getElementById('quizlist').style.display='block'">Take quiz</a>
 </section>
 
 <?php
 session_start();
 $username = $_SESSION['username'];
+$type = null;
 
 echo createQuiz($username);
+echo viewQuizzes($username);
+if (empty($_POST))
+    $input = array();
+    $input = userInput($username);
 
 
 
-function updateQuiz()
+function userInput($user)
 {
-    $sql = "INSERT INTO `t11915jr`.Quiz (user_ID, user_name, user_password) VALUES (:userId, :username, :userpassword);";
-    $sql_arr = ['userId'=>&$userID, 'username'=>&$userName, 'userpassword'=>&$userPass];
+    foreach ($_POST as $stuff)
+    {
+        // Requires PHP 8.0 to run
+        if (str_contains($stuff, "question"))
+        {
+
+            $num = $_POST[substr(7,400)];
+            $temp = $_POST[$stuff];
+            $sql = 'INSERT IGNORE INTO `t11915jr`.Question(question_number, question) VALUES (:qn, :q) ON DUPLICATE KEY UPDATE question = :q';
+            $sql_arr = ['qn'=>&$num,'q'=>&$temp];
+
+        }
+    }
+}
+
+function viewQuizzes($user)
+{
+    $userID = $user;
+    $sql = "SELECT * FROM Quiz WHERE quiz_owner=:userID";
+    $sql_arr = ['userID'=>$userID];
     $query = accessSchema($sql, $sql_arr);
+    $toOutput = '';
+    if ($query->rowCount()==0)
+    {
+        return '<div id="quizlist" style="display: none"><title>No quizzes</title></div>';
+    }
+    foreach ($query->fetchAll() as $key=>$value)
+    {
+        $toOutput .= '<div class="quiz"><div class="title">'. $value['quiz_name']. '</div></div>';
+    }
+    return $toOutput;
+}
+
+function updateQuiz($quiz_ID=null)
+{
+    echo "nya";
+//    $sql = "INSERT INTO `t11915jr`.Quiz (user_ID, user_name, user_password) VALUES (:userId, :username, :userpassword);";
+//    $sql_arr = ['userId'=>&$userID, 'username'=>&$userName, 'userpassword'=>&$userPass];
+//    $query = accessSchema($sql, $sql_arr);
 }
 
 function createQuiz($user)
@@ -53,18 +94,19 @@ function createQuiz($user)
 
 function createQ($num)
 {
-    $toPost = '<label for="question'.$num.'">Question'.$num.'</label>';
+    $toPost = '<label for="question'.$num.'">Question '.($num+1).'</label>';
     $toPost .= '<input type="text" name="question'.$num.'" placeholder="Enter question..." required>';
     // answers
     $i = 0;
     $toPost .= '<div>';
     while ($i < 4)
     {
-        $toPost .= '<div style="width: 80%; float: left">';
-        $toPost .= '<label for="question'.$num.'a'.$i.'">Answer </label>';
-        $toPost .= '<input type="text" name="question'.$num.'a'.$i.'" placeholder="Enter Answer...">';
-        $toPost .= '</div><div style="width: 20%; float: left">';
+        $toPost .= '<div style="width: 20%; float: left">';
         $toPost .= '<br><br><input type="radio" name="question'.$num.'" value="answer?">';
+        $toPost .= '</div>';
+        $toPost .= '<div style="width: 80%; float: left">';
+        $toPost .= '<label for="question'.$num.'a'.$i.'">Answer '.($i+1).'</label>';
+        $toPost .= '<input type="text" name="question'.$num.'a'.$i.'" placeholder="Enter Answer...">';
         $toPost .= '</div>';
 
         $i ++;
@@ -126,10 +168,6 @@ function addQ($k, $v, $ans, $create)
     return $str;
 }
 
-function viewQuiz()
-{
-    header("refresh:5; url=viewQuiz.php");
-}
 
 /** @noinspection DuplicatedCode */
 function accessSchema($sql, $sqlstmt=[])

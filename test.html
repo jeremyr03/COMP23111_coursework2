@@ -1,0 +1,19 @@
+<html>
+<head><title>Test File</title></head>
+<body>
+<p>Dynamic Form:</p><br />
+<form action="save.php" method="POST">
+  Name: <input type="text" name="name[]" id="name" /> Age <input type="text" name="age[]" id="age" /> Address<input type="text" name="address[]" id="end" />
+  <div id="loadHere">
+  </div>
+  <input type="button" id="plusButton" value="Add" />
+  <input type="submit" value="Send" />
+</form>
+<script src="jQuery.js" type="text/javascript"></script>
+<script>
+  $('#plusButton').click(function(){
+    $('#loadHere').append("Name: <input type=\"text\" name=\"name[]\" id=\"name\" /> Age <input type=\"text\" name=\"age[]\" id=\"age\" /> Address <input type=\"text\" name=\"address[]\" id=\"end\"><br />");
+  });
+</script>
+</body>
+</html>
